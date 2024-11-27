@@ -1,4 +1,4 @@
-static CASING_MASK: u8 = 0b00100000;
+use std::{fmt::Display, str::FromStr};
 
 pub struct ChunkType {
     ancillary: u8,
@@ -14,19 +14,61 @@ impl ChunkType {
     }
 
     pub fn is_valid(&self) -> bool {
-        todo!("implement is_valid");
+        self.bytes().iter().all(|&b| b.is_ascii_alphabetic())
     }
 
     pub fn is_critical(&self) -> bool {
-
+        self.ancillary.is_ascii_uppercase()
     }
-    pub fn is_public() {
+    pub fn is_public(&self) -> bool {
+        self.private.is_ascii_uppercase()
     }
-    pub fn is_reserved_bit_valid() {
+    pub fn is_reserved_bit_valid(&self) -> bool {
+        self.reserved.is_ascii_uppercase()
     }
-    pub fn is_safe_to_copy() {
+    pub fn is_safe_to_copy(&self) -> bool {
+        self.safe.is_ascii_lowercase()
     }
 }
+
+impl TryFrom<[u8;4]> for ChunkType {
+    type Error = & 'static str;
+
+    fn try_from(bytes: [u8;4]) -> Result<Self, Self::Error> {
+        let ancillary = bytes[0];
+        let private = bytes[1];
+        let reserved = bytes[2];
+        let safe = bytes[3];
+        Ok(ChunkType {
+                ancillary, private, reserved, safe
+            })
+    }
+}
+
+impl FromStr for ChunkType {
+    type Err = & 'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() != 4 {
+            return Err("str length does not match chunk type parameters");
+        }
+                // Convert each character into a u8 and collect into an array
+        let mut bytes = s.bytes();
+        Ok(ChunkType {
+            ancillary: bytes.next().unwrap(),
+            private: bytes.next().unwrap(),
+            reserved: bytes.next().unwrap(),
+            safe: bytes.next().unwrap(),
+        })
+    }
+}
+
+impl Display for ChunkType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}{}{}", self.ancillary, self.private, self.reserved, self.safe)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
